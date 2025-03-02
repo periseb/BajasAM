@@ -1,0 +1,100 @@
+:root {
+    --primary: #0070f3;
+    --primary-foreground: #ffffff;
+    --secondary: #f5f5f5;
+    --secondary-foreground: #111111;
+    --accent: #00a8ff;
+    --accent-foreground: #ffffff;
+    --background: #ffffff;
+    --foreground: #111111;
+    --card: #ffffff;
+    --card-foreground: #111111;
+    --popover: #ffffff;
+    --popover-foreground: #111111;
+    --muted: #f5f5f5;
+    --muted-foreground: #666666;
+    --destructive: #ff0000;
+    --destructive-foreground: #ffffff;
+    --border: #e5e5e5;
+    --input: #e5e5e5;
+    --ring: #0070f3;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-family);
+}
+
+.card {
+    background-color: var(--card);
+    border-color: var(--border);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.table th {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+}
+
+.modal-content {
+    background-color: var(--background);
+    border-color: var(--border);
+}
+
+.form-control,
+.form-select {
+    background-color: var(--input);
+    border-color: var(--border);
+    color: var(--foreground);
+}
+
+.alert-success {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+}
+
+.modal-body .form-control[type="date"] {
+    background-color: var(--input);
+    border-color: var(--border);
+    color: var(--foreground);
+    padding: 0.375rem 0.75rem;
+}
+
+.modal-body .form-control[type="date"]:disabled {
+    background-color: var(--muted);
+    cursor: not-allowed;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.sortable:hover {
+    background-color: var(--muted);
+    transition: background-color 0.2s ease;
+}
+
+.sort-icon {
+    font-size: 0.8em;
+    margin-left: 5px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.sortable:hover .sort-icon {
+    opacity: 1;
+}
+
+.bi-arrow-up,
+.bi-arrow-down {
+    opacity: 1;
+    color: var(--primary);
+}

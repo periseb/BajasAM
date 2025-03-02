@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Personal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Gestión de Personal</h2>
+            <div class="btn-group">
+                <button class="btn btn-success me-2" onclick="loadSampleData()">
+                    <i class="bi bi-cloud-download me-2"></i>Cargar Datos de Ejemplo
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#personnelModal" onclick="clearForm()">
+                    <i class="bi bi-plus-lg me-2"></i>Añadir Nuevo Personal
+                </button>
+            </div>
+        </div>
+
+        <div id="alertContainer" class="alert alert-success alert-dismissible fade d-none" role="alert">
+            <span id="alertMessage"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Buscar personal..." 
+                                   id="searchInput" 
+                                   onkeyup="searchPersonnel()">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="recordsPerPage" onchange="changeRecordsPerPage()">
+                            <option value="5">5 por página</option>
+                            <option value="10" selected>10 por página</option>
+                            <option value="25">25 por página</option>
+                            <option value="50">50 por página</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="personnelTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('name')">
+                                    Nombre <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('dni')">
+                                    DNI <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('category')">
+                                    Categoría <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('contractType')">
+                                    Tipo de Contrato <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('shift')">
+                                    Turno <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('status')">
+                                    Estado <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('substitute')">
+                                    Suplente <i class="bi bi-arrow-down-up sort-icon"></i>
+                                </th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personnelTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted">
+                        Mostrando <span id="startRecord">1</span> - <span id="endRecord">10</span> de <span id="totalRecords">0</span> registros
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination mb-0" id="pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="personnelModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Añadir Personal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="personnelForm" class="needs-validation" novalidate>
+                        <input type="hidden" id="personnelId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="nameInput" required>
+                                <div class="invalid-feedback">Por favor, ingrese el nombre</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">DNI</label>
+                                <input type="text" class="form-control" id="dniInput" required>
+                                <div class="invalid-feedback">Por favor, ingrese el DNI</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" id="statusInput" required onchange="handleStatusChange()">
+                                    <option value="">Seleccione estado</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="baja">Baja</option>
+                                    <option value="NA">NA</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione un estado</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Suplente</label>
+                                <select class="form-select" id="substituteInput" disabled>
+                                    <option value="">Seleccione suplente</option>
+                                </select>
+                                <div class="invalid-feedback">Debe seleccionar un suplente cuando el estado es baja</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">RPT</label>
+                                <input type="text" class="form-control" id="rptInput" required>
+                                <div class="invalid-feedback">Por favor, ingrese el RPT</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nivel</label>
+                                <input type="text" class="form-control" id="nivelInput" required>
+                                <div class="invalid-feedback">Por favor, ingrese el Nivel</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Categoría</label>
+                                <select class="form-select" id="categoryInput" required>
+                                    <option value="">Seleccione categoría</option>
+                                    <option value="operario">Operario</option>
+                                    <option value="auxiliar taquillero">Auxiliar Taquillero</option>
+                                    <option value="administrativo">Administrativo</option>
+                                    <option value="responsable operativo de instalacion">Responsable Operativo de Instalación</option>
+                                    <option value="DUE">DUE</option>
+                                    <option value="tecnico salvamento y socorrismo">Técnico Salvamento y Socorrismo</option>
+                                    <option value="tecnico deportivo vigilante">Técnico Deportivo Vigilante</option>
+                                    <option value="tecnico deportivo">Técnico Deportivo</option>
+                                    <option value="preparador fisico">Preparador Físico</option>
+                                    <option value="tecnico de mantenimiento">Técnico de Mantenimiento</option>
+                                    <option value="director de instalacion">Director de Instalación</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione una categoría</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Contrato</label>
+                                <select class="form-select" id="contractTypeInput" required>
+                                    <option value="">Seleccione tipo de contrato</option>
+                                    <option value="0">Personal Funcionario con Reserva</option>
+                                    <option value="1">Personal Funcionario sin Reserva</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione un tipo de contrato</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Turno</label>
+                                <select class="form-select" id="shiftInput" required>
+                                    <option value="">Seleccione turno</option>
+                                    <option value="enlaceMañana">Enlace Mañana</option>
+                                    <option value="mañana">Mañana</option>
+                                    <option value="correTurnos">Corre Turnos</option>
+                                    <option value="tarde">Tarde</option>
+                                    <option value="enlaceTarde">Enlace Tarde</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione un turno</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Horario</label>
+                                <select class="form-select" id="scheduleInput" required>
+                                    <option value="">Seleccione horario</option>
+                                    <option value="0">08:00 - 15:00</option>
+                                    <option value="1">09:00 - 16:00</option>
+                                    <option value="2">15:00 - 22:00</option>
+                                    <option value="3">06:00 - 13:00</option>
+                                    <option value="4">05:00 - 12:00</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione un horario</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Porcentaje de Trabajo</label>
+                                <input type="number" class="form-control" id="percentageInput" value="40" min="0" max="100" required>
+                                <div class="invalid-feedback">Por favor, ingrese el porcentaje de trabajo</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Grupo</label>
+                                <select class="form-select" id="groupInput" required>
+                                    <option value="">Seleccione grupo</option>
+                                    <option value="a1">A1</option>
+                                    <option value="a2">A2</option>
+                                    <option value="c1">C1</option>
+                                    <option value="c2">C2</option>
+                                    <option value="e">E</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor, seleccione un grupo</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" onclick="savePersonnel()" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Acción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmationMessage"></p>
+                    <div id="leaveDateContainer" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label">Fecha de comienzo de baja</label>
+                            <input type="date" class="form-control" id="leaveDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha prevista de alta</label>
+                            <input type="date" class="form-control" id="returnDate" disabled>
+                            <small class="text-muted">La fecha de alta solo se puede establecer después de seleccionar la fecha de baja</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirmActionBtn" class="btn btn-danger">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let personnel = [];
+        let currentPage = 1;
+        let recordsPerPage = 10;
+        let filteredPersonnel = [];
+        let currentSortColumn = '';
+        let currentSortDirection = 'asc';
+
+        function savePersonnel() {
+            const form = document.getElementById('personnelForm');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            const statusInput = document.getElementById('statusInput');
+            const substituteInput = document.getElementById('substituteInput');
+            const currentPersonId = document.getElementById('personnelId').value;
+            
+            if (statusInput.value === 'baja') {
+                if (!substituteInput.value) {
+                    substituteInput.setCustomValidity('Debe seleccionar un suplente cuando el estado es baja');
+                    form.classList.add('was-validated');
+                    return;
+                }
+                if (parseInt(substituteInput.value) === parseInt(currentPersonId)) {
+                    substituteInput.setCustomValidity('No puede seleccionarse a sí mismo como suplente');
+                    form.classList.add('was-validated');
+                    return;
+                }
+            }
+            
+            const id = document.getElementById('personnelId').value || Date.now();
+            const personData = {
+                id: parseInt(id),
+                name: document.getElementById('nameInput').value,
+                dni: document.getElementById('dniInput').value,
+                rpt: document.getElementById('rptInput').value,
+                nivel: document.getElementById('nivelInput').value,
+                category: document.getElementById('categoryInput').value,
+                contractType: document.getElementById('contractTypeInput').value,
+                shift: document.getElementById('shiftInput').value,
+                schedule: document.getElementById('scheduleInput').value,
+                workPercentage: document.getElementById('percentageInput').value,
+                group: document.getElementById('groupInput').value,
+                status: document.getElementById('statusInput').value,
+                substitute: document.getElementById('substituteInput').value
+            };
+
+            const existingIndex = personnel.findIndex(p => p.id === personData.id);
+            if (existingIndex > -1) {
+                personnel[existingIndex] = personData;
+                showAlert('Personal actualizado exitosamente');
+            } else {
+                personnel.push(personData);
+                showAlert('Personal agregado exitosamente');
+            }
+            
+            renderPersonnelTable();
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('personnelModal'));
+            if (modal) {
+                modal.hide();
+                form.reset();
+                form.classList.remove('was-validated');
+            }
+        }
+
+        function handleStatusChange() {
+            const statusInput = document.getElementById('statusInput');
+            const substituteInput = document.getElementById('substituteInput');
+            substituteInput.setCustomValidity('');
+            if (statusInput.value === 'baja') {
+                substituteInput.disabled = false;
+                substituteInput.required = true;
+                populateSubstituteDropdown();
+            } else {
+                substituteInput.disabled = true;
+                substituteInput.required = false;
+                substituteInput.value = '';
+            }
+        }
+
+        function populateSubstituteDropdown() {
+            const substituteSelect = document.getElementById('substituteInput');
+            const currentPersonId = document.getElementById('personnelId').value;
+            substituteSelect.innerHTML = '<option value="">Seleccione suplente</option>';
+            
+            const availableSubstitutes = personnel.filter(person => {
+                const isActive = person.status === 'alta';
+                const isNotSubstituting = !personnel.some(p => p.substitute === person.id.toString());
+                const isNotCurrent = person.id !== parseInt(currentPersonId);
+                
+                return isActive && isNotSubstituting && isNotCurrent;
+            });
+
+            availableSubstitutes.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = `${person.name} (${person.dni})`;
+                substituteSelect.appendChild(option);
+            });
+        }
+
+        function editPersonnel(id) {
+            const person = personnel.find(p => p.id === id);
+            if (person) {
+                document.getElementById('personnelId').value = person.id;
+                document.getElementById('nameInput').value = person.name;
+                document.getElementById('dniInput').value = person.dni;
+                document.getElementById('rptInput').value = person.rpt;
+                document.getElementById('nivelInput').value = person.nivel;
+                document.getElementById('categoryInput').value = person.category;
+                document.getElementById('contractTypeInput').value = person.contractType;
+                document.getElementById('shiftInput').value = person.shift;
+                document.getElementById('scheduleInput').value = person.schedule;
+                document.getElementById('percentageInput').value = person.workPercentage;
+                document.getElementById('groupInput').value = person.group;
+                document.getElementById('statusInput').value = person.status || 'NA';
+                document.getElementById('substituteInput').value = person.substitute || '';
+                handleStatusChange();
+                document.getElementById('modalTitle').textContent = 'Editar Personal';
+                new bootstrap.Modal(document.getElementById('personnelModal')).show();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('personnelForm').reset();
+            document.getElementById('personnelId').value = '';
+            document.getElementById('substituteInput').disabled = true;
+            document.getElementById('modalTitle').textContent = 'Añadir Personal';
+            document.getElementById('personnelForm').classList.remove('was-validated');
+        }
+
+        function deletePersonnel(id) {
+            document.getElementById('confirmationMessage').textContent = '¿Está seguro de que desea eliminar este personal?';
+            document.getElementById('leaveDateContainer').classList.add('d-none');
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            document.getElementById('confirmActionBtn').onclick = () => {
+                personnel = personnel.filter(p => p.id !== id);
+                renderPersonnelTable();
+                confirmModal.hide();
+                showAlert('Personal eliminado exitosamente');
+            };
+            confirmModal.show();
+        }
+
+        function terminatePersonnel(id) {
+            document.getElementById('confirmationMessage').textContent = '¿Está seguro de que desea dar de baja a este personal?';
+            document.getElementById('leaveDateContainer').classList.remove('d-none');
+            
+            document.getElementById('leaveDate').addEventListener('change', function() {
+                const returnDateInput = document.getElementById('returnDate');
+                if (this.value) {
+                    returnDateInput.disabled = false;
+                    returnDateInput.min = this.value;
+                } else {
+                    returnDateInput.disabled = true;
+                    returnDateInput.value = '';
+                }
+            });
+
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            document.getElementById('confirmActionBtn').onclick = () => {
+                const leaveDate = document.getElementById('leaveDate').value;
+                const returnDate = document.getElementById('returnDate').value;
+                
+                if (!leaveDate) {
+                    alert('Por favor, seleccione una fecha de baja');
+                    return;
+                }
+
+                const person = personnel.find(p => p.id === id);
+                if (person) {
+                    person.status = 'baja';
+                    person.leaveDate = leaveDate;
+                    person.returnDate = returnDate;
+                    person.onLeave = true;
+
+                    const today = new Date();
+                    const returnDateTime = new Date(returnDate);
+                    if (returnDateTime <= today) {
+                        person.status = 'alta';
+                        person.onLeave = false;
+                        person.substitute = '';
+                        delete person.leaveDate;
+                        delete person.returnDate;
+                    }
+                }
+                renderPersonnelTable();
+                confirmModal.hide();
+                showAlert('Estado del personal actualizado exitosamente');
+            };
+            confirmModal.show();
+        }
+
+        function loadSampleData() {
+            personnel = [
+                {
+                    id: 1,
+                    name: "Juan Pérez",
+                    dni: "12345678A",
+                    category: "operario",
+                    contractType: "0",
+                    shift: "mañana",
+                    status: "alta",
+                    rpt: "RPT001",
+                    nivel: "1",
+                    schedule: "0",
+                    workPercentage: "100",
+                    group: "c1"
+                },
+                {
+                    id: 2,
+                    name: "María García",
+                    dni: "87654321B",
+                    category: "administrativo",
+                    contractType: "1",
+                    shift: "tarde",
+                    status: "alta",
+                    rpt: "RPT002",
+                    nivel: "2",
+                    schedule: "2",
+                    workPercentage: "80",
+                    group: "b1"
+                }
+            ];
+            renderPersonnelTable();
+            showAlert('Datos de ejemplo cargados exitosamente');
+        }
+
+        function showAlert(message) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertMessage = document.getElementById('alertMessage');
+            alertMessage.textContent = message;
+            alertContainer.classList.remove('d-none');
+            alertContainer.classList.add('show');
+            setTimeout(() => {
+                alertContainer.classList.remove('show');
+                alertContainer.classList.add('d-none');
+            }, 3000);
+        }
+
+        function initializeModals() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('hidden.bs.modal', function () {
+                    const form = this.querySelector('form');
+                    if (form) {
+                        form.reset();
+                        form.classList.remove('was-validated');
+                    }
+                });
+            });
+        }
+
+        function checkAndUpdateStatus() {
+            const today = new Date();
+            personnel.forEach(person => {
+                if (person.returnDate) {
+                    const returnDateTime = new Date(person.returnDate);
+                    if (returnDateTime <= today) {
+                        person.status = 'alta';
+                        person.onLeave = false;
+                        person.substitute = '';
+                        delete person.leaveDate;
+                        delete person.returnDate;
+                    }
+                }
+            });
+            renderPersonnelTable();
+        }
+
+        function updatePaginationInfo() {
+            const totalRecords = filteredPersonnel.length;
+            const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * recordsPerPage + 1;
+            const endRecord = Math.min(startRecord + recordsPerPage - 1, totalRecords);
+            
+            document.getElementById('startRecord').textContent = startRecord;
+            document.getElementById('endRecord').textContent = endRecord;
+            document.getElementById('totalRecords').textContent = totalRecords;
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredPersonnel.length / recordsPerPage);
+            const paginationElement = document.getElementById('pagination');
+            paginationElement.innerHTML = '';
+            
+            paginationElement.innerHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                paginationElement.innerHTML += `
+                    <li class="page-item ${currentPage === i ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            paginationElement.innerHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredPersonnel.length / recordsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderPersonnelTable();
+            }
+        }
+
+        function changeRecordsPerPage() {
+            recordsPerPage = parseInt(document.getElementById('recordsPerPage').value);
+            currentPage = 1;
+            renderPersonnelTable();
+        }
+
+        function searchPersonnel() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filteredPersonnel = personnel.filter(person => 
+                person.name.toLowerCase().includes(searchTerm) ||
+                person.dni.toLowerCase().includes(searchTerm) ||
+                person.category.toLowerCase().includes(searchTerm)
+            );
+            currentPage = 1;
+            renderPersonnelTable();
+        }
+
+        function sortTable(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+
+            filteredPersonnel.sort((a, b) => {
+                let valueA = (a[column] || '').toString().toLowerCase();
+                let valueB = (b[column] || '').toString().toLowerCase();
+
+                if (column === 'contractType') {
+                    valueA = a[column] === '0' ? 'Personal Funcionario con Reserva' : 'Personal Funcionario sin Reserva';
+                    valueB = b[column] === '0' ? 'Personal Funcionario con Reserva' : 'Personal Funcionario sin Reserva';
+                }
+
+                if (column === 'status') {
+                    valueA = a[column].toUpperCase();
+                    valueB = b[column].toUpperCase();
+                }
+
+                if (valueA < valueB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valueA > valueB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            const headers = document.querySelectorAll('.sortable');
+            headers.forEach(header => {
+                const icon = header.querySelector('.sort-icon');
+                if (icon) {
+                    icon.className = 'bi bi-arrow-down-up sort-icon';
+                }
+            });
+
+            const currentHeader = document.querySelector(`th[onclick="sortTable('${column}')"] .sort-icon`);
+            if (currentHeader) {
+                currentHeader.className = `bi bi-arrow-${currentSortDirection === 'asc' ? 'up' : 'down'} sort-icon`;
+            }
+
+            renderPersonnelTable();
+        }
+
+        function renderPersonnelTable() {
+            const tableBody = document.getElementById('personnelTableBody');
+            if (!tableBody) return;
+
+            filteredPersonnel = document.getElementById('searchInput').value ? filteredPersonnel : [...personnel];
+            const start = (currentPage - 1) * recordsPerPage;
+            const end = start + recordsPerPage;
+            const paginatedData = filteredPersonnel.slice(start, end);
+
+            tableBody.innerHTML = '';
+
+            paginatedData.forEach(person => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${person.name}</td>
+                    <td>${person.dni}</td>
+                    <td>${person.category}</td>
+                    <td>${person.contractType === '0' ? 'Personal Funcionario con Reserva' : 'Personal Funcionario sin Reserva'}</td>
+                    <td>${person.shift}</td>
+                    <td>
+                        <span class="badge ${person.status === 'alta' ? 'bg-success' : 'bg-danger'}">
+                            ${person.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>${person.substitute ? (personnel.find(p => p.id === parseInt(person.substitute))?.name || '-') : '-'}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editPersonnel(${person.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deletePersonnel(${person.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            ${person.status === 'alta' ? `
+                                <button class="btn btn-outline-warning" onclick="terminatePersonnel(${person.id})">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            updatePaginationInfo();
+            renderPagination();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeModals();
+            setInterval(checkAndUpdateStatus, 60000);
+        });
+    </script>
+</body>
+</html>   
